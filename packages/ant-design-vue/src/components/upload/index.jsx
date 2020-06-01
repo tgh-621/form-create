@@ -1,4 +1,4 @@
-import {hasSlot, toString} from '@form-create/utils';
+import {deepExtend, hasSlot, toString} from '@form-create/utils';
 import style from '../../style/index.css';
 
 const parseFile = function (file, uid) {
@@ -37,7 +37,15 @@ export default {
         onSuccess: {
             type: Function,
             required: true
-        }
+        },
+        onHandle: {
+            type: Function,
+            default: function (file) {
+                this.previewImage = file.url;
+                this.previewVisible = true;
+            }
+        },
+        modalTitle: String,
     },
     data() {
         const fileList = this.value.map(parseFile);
@@ -65,13 +73,6 @@ export default {
                 <AIcon type="plus"/>
             </div>
         },
-        handlePreview(file) {
-            this.previewImage = file.url;
-            this.previewVisible = true;
-        },
-        handleCancel() {
-            this.previewVisible = false;
-        },
         handleChange({file, fileList}) {
             const list = this.uploadList;
             if (file.status === 'done') {
@@ -98,10 +99,13 @@ export default {
     render() {
         const isShow = (!this.limit || this.limit > this.uploadList.length);
         this.initChildren();
+        const ctx = {...this.ctx};
+        ctx.on = deepExtend({}, ctx.on || {});
         return <div class={{[style['fc-hide-btn']]: !isShow}}>
-            <AUpload {...this.ctx} on-preview={this.handlePreview} on-change={this.handleChange}
+            <AUpload {...ctx} on-preview={this.onHandle.bind(this)}
+                on-change={this.handleChange}
                 ref="upload" defaultFileList={this.defaultUploadList}>{this.children}</AUpload>
-            <aModal visible={this.previewVisible} footer={null} on-cancel={this.handleCancel}>
+            <aModal title={this.modalTitle} v-model={this.previewVisible} footer={null}>
                 <img style="width: 100%" src={this.previewImage}/>
             </aModal>
         </div>;
